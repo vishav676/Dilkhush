@@ -46,8 +46,9 @@ migrate = Migrate(app, db)
 
 def init_db():
     with app.app_context():
-        # Create all tables
-        db.create_all()
+        # Run migrations
+        from flask_migrate import upgrade
+        upgrade()
         
         # Create roles if they don't exist
         from admin.models import Role
