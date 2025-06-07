@@ -44,6 +44,19 @@ app.config['SECURITY_POST_LOGOUT_VIEW'] = '/admin/'
 db.init_app(app)
 migrate = Migrate(app, db)
 
+def init_db():
+    with app.app_context():
+        # Create all tables
+        db.create_all()
+        
+        # Create roles if they don't exist
+        from admin.models import Role
+        admin_role = Role.query.filter_by(name='admin').first()
+        if not admin_role:
+            admin_role = Role(name='admin', description='Administrator')
+            db.session.add(admin_role)
+            db.session.commit()
+
 # Setup Flask-Security
 user_datastore = SQLAlchemySessionUserDatastore(db.session, User, Role)
 security = Security(app, user_datastore)
@@ -51,6 +64,9 @@ security = Security(app, user_datastore)
 # Import and initialize admin after db is initialized
 from admin import init_app
 init_app(app)
+
+# Initialize database and create roles
+init_db()
 
 # Sample data for services (fallback if database is empty)
 SAMPLE_SERVICES = [
@@ -225,10 +241,6 @@ def serve_image(filename):
     return send_from_directory('static/images', filename)
 
 if __name__ == '__main__':
-    # Create database tables if they don't exist
-    with app.app_context():
-        db.create_all()
-    
     # Run the app
     if os.getenv('FLASK_ENV') == 'production':
         # In production, use the port provided by Render
